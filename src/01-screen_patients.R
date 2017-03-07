@@ -18,3 +18,11 @@ mbo_doac <- concat_encounters(doac_pts$millennium.id)
 # run MBO query:
 #   * Medications - Inpatient - Prompt
 #       - Medication (Generic): apixaban, rivaroxaban, dabigatran, edoxaban
+
+meds_doac <- read_data("data/raw", "meds-inpt", FALSE) %>%
+    as.meds_inpt()
+
+meds_summary <- meds_doac %>%
+    distinct(med, millennium.id) %>%
+    group_by(med) %>%
+    count()
