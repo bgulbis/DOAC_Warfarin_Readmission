@@ -58,7 +58,7 @@ screen_zip_curr <- read_data("data/raw", "zip-curr") %>%
     mutate(zip5_curr = str_extract(zip_curr, "....."))
 
 zips <- full_join(screen_zipcodes, screen_zip_curr, by = "pie.id") %>%
-    mutate(zip_pt = if_else(!is.na(zip5), zip5, zip5_curr))
+    mutate(zip_pt = coalesce(zip5, zip5_curr))
 
 local_pts <- zips %>%
     filter(zip5 %in% mhhs_zipcodes$zipcode) %>%
@@ -69,8 +69,63 @@ local_pie <- concat_encounters(local_pts$pie.id)
 # run EDW query:
 #   * Medications - Home and Discharge - All
 
+meds_home <- read_data("data/raw", "meds-home") %>%
+    as.meds_home()
+
+# remove pts on oac at home
+oac <- c("warfarin", "apixaban", "rivaroxaban", "dabigatran", "edoxaban")
+home_oac <- meds_home %>%
+    filter(med %in% oac,
+           med.type == "Recorded / Home Meds") %>%
+    distinct(pie.id)
+
+new_oac <- anti_join(local_pts, home_oac, by = "pie.id")
+
+# find pts with d/c Rx for oac
+dc_oac <- meds_home %>%
+    semi_join(new_oac, by = "pie.id") %>%
+    filter(med %in% oac,
+           med.type == "Prescription / Discharge Order")
+
+# remove pts with > 1 oac on d/c
+dc_pts <- dc_oac %>%
+    distinct(pie.id, med) %>%
+    count(pie.id) %>%
+    filter(n == 1)
+
+oac_pie <- concat_encounters(dc_pts$pie.id)
+
+# run EDW query:
+#   * Diagnosis (ICD-9/10-CM) - All
+
+# ICD-9-CM
+# Afib/flutter: 427.31, 427.32
+# DVT, acute: 453.82, 453.83, 453.84, 453.85, 453.86, 453.87, 453.89, 453.9
+# PE, acute: 415.12, 415.13, 415.19
+
+indications_9 <- c("427.31", "427.32", "453.82", "453.83", "453.84", "453.85",
+                 "453.86", "453.87", "453.89", "453.9", "415.12", "415.13",
+                 "415.19")
+
+cols <- fwf_empty("data/external/2016_I9gem.txt", col_names = c("icd9", "icd10", "other"))
+icd10_gem <- read_fwf("data/external/2016_I9gem.txt", cols) %>%
+    filter(icd10 != "NoDx")
+
+icd9_nod <- str_replace_all(indications_9, "\\.", "")
+
+icd10 <- filter(icd10_gem, icd9 %in% icd9_nod)
+
+indications <- c(icd9_nod, icd10$icd10)
+
+diagnosis <- read_data("data/raw", "diagnosis") %>%
+    as.diagnosis()
+
+screen_icd <- diagnosis %>%
+    mutate(icd = str_replace_all(diag.code, "\\.", "")) %>%
+    filter(icd %in% indications,
+           diag.type == "Final")
+
 # run MBO query:
-#   * Diagnosis - ICD-9/10-CM
 #   * Medications - Inpatient - Prompt
 #       - Medication (Generic): apixaban, rivaroxaban, dabigatran, edoxaban
 
