@@ -94,6 +94,8 @@ dc_pts <- dc_oac %>%
     count(pie.id) %>%
     filter(n == 1)
 
+oac_med <- distinct(dc_oac, pie.id, med)
+
 oac_pie <- concat_encounters(dc_pts$pie.id)
 
 # run EDW query:
@@ -128,7 +130,8 @@ screen_icd <- diagnosis %>%
            diag.type == "Final")
 
 eligible_pts <- distinct(screen_icd, pie.id) %>%
-    left_join(screen_id, by = "pie.id")
+    left_join(screen_id, by = "pie.id") %>%
+    left_join(oac_med, by = "pie.id")
 
 eligible_edw <- concat_encounters(eligible_pts$pie.id)
 eligible_mbo <- concat_encounters(eligible_pts$millennium.id)
