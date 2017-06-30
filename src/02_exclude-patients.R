@@ -141,31 +141,7 @@ write_rds(include_pts, "data/tidy/include_pts.Rds", "gz")
 #     distinct(pie.id, med) %>%
 #     count(med)
 
-include_edw <- concat_encounters(include_pts$pie.id)
+include_person <- concat_encounters(include_pts$person.id)
 
 # run EDW query:
 #   * Encounters - by Person ID
-
-
-
-# run MBO query:
-#   * Medications - Inpatient - Prompt
-#       - Medication (Generic): apixaban, rivaroxaban, dabigatran, edoxaban
-
-
-# edw_persons <- concat_encounters(screen_id$person.id)
-
-
-# screen_encounters <- read_data("data/raw", "encounters") %>%
-#     as.encounters() %>%
-#     group_by(person.id) %>%
-#     arrange(admit.datetime, .by_group = TRUE)
-#
-#
-# meds_doac <- read_data("data/raw", "meds-inpt", FALSE) %>%
-#     as.meds_inpt()
-#
-# meds_summary <- meds_doac %>%
-#     distinct(med, millennium.id) %>%
-#     group_by(med) %>%
-#     count()
