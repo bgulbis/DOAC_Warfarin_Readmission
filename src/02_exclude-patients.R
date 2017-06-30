@@ -145,3 +145,6 @@ include_person <- concat_encounters(include_pts$person.id)
 
 # run EDW query:
 #   * Encounters - by Person ID
+
+exclude_pts <- list(excl_duration, excl_liver, excl_preg, excl_renal, excl_transfer)
+write_rds(exclude_pts, "data/tidy/exclude_pts.Rds", "gz")
