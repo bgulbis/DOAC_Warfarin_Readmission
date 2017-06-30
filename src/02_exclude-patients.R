@@ -8,6 +8,14 @@ eligible_pts <- read_rds("data/tidy/eligible_pts.Rds")
 
 include_pts <- eligible_pts
 
+cols <- fwf_empty("data/external/2016_I9gem.txt", col_names = c("icd9", "icd10", "other"))
+icd10_gem <- read_fwf("data/external/2016_I9gem.txt", cols) %>%
+    filter(icd10 != "NoDx")
+
+diagnosis <- read_data("data/raw", "diagnosis") %>%
+    as.diagnosis() %>%
+    tidy_data()
+
 tmp_preg_icd <- diagnosis %>%
     semi_join(include_pts, by = "pie.id") %>%
     check_pregnant()
