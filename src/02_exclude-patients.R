@@ -8,16 +8,16 @@ eligible_pts <- read_rds("data/tidy/eligible_pts.Rds")
 
 include_pts <- eligible_pts
 
-excl_preg_icd <- diagnosis %>%
+tmp_preg_icd <- diagnosis %>%
     semi_join(include_pts, by = "pie.id") %>%
     check_pregnant()
 
-excl_preg_labs <- read_data("data/raw", "labs-preg") %>%
+tmp_preg_labs <- read_data("data/raw", "labs-preg") %>%
     as.labs() %>%
     check_pregnant()
 
-excl_preg <- excl_preg_icd %>%
-    bind_rows(excl_preg_labs) %>%
+excl_preg <- tmp_preg_icd %>%
+    bind_rows(tmp_preg_labs) %>%
     distinct()
 
 include_pts <- anti_join(include_pts, excl_preg, by = "pie.id")
@@ -49,7 +49,7 @@ icd9_hd <- c("5855", "5856", "V4511")
 icd_hd <- filter(icd10_gem, icd9 %in% icd9_hd)
 indications_hd <- c(icd_hd$icd9, icd_hd$icd10)
 
-excl_hd <- diagnosis %>%
+tmp_hd <- diagnosis %>%
     semi_join(include_pts, by = "pie.id") %>%
     mutate(icd = str_replace_all(diag.code, "\\.", "")) %>%
     filter(icd %in% indications_hd,
@@ -85,7 +85,7 @@ demographics <- read_data("data/raw", "demographics", FALSE) %>%
     as.demographics() %>%
     semi_join(include_pts, by = "millennium.id")
 
-excl_crcl <- labs_renal %>%
+tmp_crcl <- labs_renal %>%
     filter(lab == "creatinine lvl") %>%
     group_by(pie.id) %>%
     arrange(lab.datetime, .by_group = TRUE) %>%
@@ -98,8 +98,8 @@ excl_crcl <- labs_renal %>%
     filter(crcl <= 30) %>%
     distinct(pie.id)
 
-excl_renal <- excl_hd %>%
-    bind_rows(excl_crcl) %>%
+excl_renal <- tmp_hd %>%
+    bind_rows(tmp_crcl) %>%
     distinct(pie.id)
 
 include_pts <- anti_join(include_pts, excl_renal, by = "pie.id")
@@ -127,11 +127,13 @@ excl_duration <- warfarin_info %>%
 
 include_pts <- anti_join(include_pts, excl_duration, by = "pie.id")
 
-oac_count <- semi_join(dc_oac, include_pts, by = "pie.id") %>%
-    distinct(pie.id, med) %>%
-    count(med)
+write_rds(include_pts, "data/tidy/include_pts.Rds", "gz")
 
-study_edw <- concat_encounters(include_pts$pie.id)
+# oac_count <- semi_join(dc_oac, include_pts, by = "pie.id") %>%
+#     distinct(pie.id, med) %>%
+#     count(med)
+
+include_edw <- concat_encounters(include_pts$pie.id)
 
 # run EDW query:
 #   * Encounters - by Person ID
@@ -146,16 +148,16 @@ study_edw <- concat_encounters(include_pts$pie.id)
 # edw_persons <- concat_encounters(screen_id$person.id)
 
 
-screen_encounters <- read_data("data/raw", "encounters") %>%
-    as.encounters() %>%
-    group_by(person.id) %>%
-    arrange(admit.datetime, .by_group = TRUE)
-
-
-meds_doac <- read_data("data/raw", "meds-inpt", FALSE) %>%
-    as.meds_inpt()
-
-meds_summary <- meds_doac %>%
-    distinct(med, millennium.id) %>%
-    group_by(med) %>%
-    count()
+# screen_encounters <- read_data("data/raw", "encounters") %>%
+#     as.encounters() %>%
+#     group_by(person.id) %>%
+#     arrange(admit.datetime, .by_group = TRUE)
+#
+#
+# meds_doac <- read_data("data/raw", "meds-inpt", FALSE) %>%
+#     as.meds_inpt()
+#
+# meds_summary <- meds_doac %>%
+#     distinct(med, millennium.id) %>%
+#     group_by(med) %>%
+#     count()
