@@ -12,6 +12,7 @@ library(tidyverse)
 library(lubridate)
 library(stringr)
 library(edwr)
+library(icd)
 
 screen_pts <- read_data("data/raw", "patients", FALSE) %>%
     as.patients() %>%
@@ -132,7 +133,7 @@ eligible_pts <- distinct(screen_icd, pie.id) %>%
 eligible_edw <- concat_encounters(eligible_pts$pie.id)
 eligible_mbo <- concat_encounters(eligible_pts$millennium.id)
 
-write_rds(include_pts, "data/tidy/eligible_pts.Rds", "gz")
+write_rds(eligible_pts, "data/tidy/eligible_pts.Rds", "gz")
 
 # run MBO queries:
 #   * Demographics
