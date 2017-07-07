@@ -1,1 +1,5 @@
 Reference Data
+*.csv
+*.csv.gz
+*.xlsx
+*.xls
