@@ -1,0 +1,70 @@
+---
+title: "Preliminary Analysis for ASHP Abstract"
+author: "Bolanle Somboyo, Brian Gulbis"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+    html_document:
+        code_folding: hide
+        toc: yes
+        toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+options(knitr.table.format = "html")
+```
+
+```{r}
+library(tidyverse)
+library(kableExtra)
+
+x <- dirr::get_rds("../data/tidy")
+
+data_bs <- patients_bs %>%
+    left_join(manual_bs, by = "millennium.id") %>%
+    filter(!other, new_oac) %>%
+    select(-c(pie.id, fin, person.id, revisit.pie.id, revisit.fin))
+```
+
+```{r}
+count_pts <- data_bs %>%
+    count(med)
+
+x <- paste("n =", count_pts$n[[1]])
+y <- paste("n =", count_pts$n[[2]])
+
+hdr <- c(" " = 1, x = 2, y = 2)
+names(hdr) <- c(" ", x, y)
+
+data_bs %>%
+    mutate(revisit = !is.na(revisit_days)) %>%
+    group_by(med) %>%
+    summarize_at(c("revisit", "afib", "dvt", "pe", "revisit_anticoag_related", "new_bleed", "new_thrombus"), sum) %>%
+    mutate_at(c("revisit", "afib", "dvt", "pe", "revisit_anticoag_related", "new_bleed", "new_thrombus"), funs(coalesce(., 0L))) %>%
+    rename(A.fib = afib,
+           DVT = dvt,
+           PE = pe,
+           `New Bleed` = new_bleed,
+           `New Thrombus` = new_thrombus,
+           Revisit = revisit,
+           `OAC Related Revisit` = revisit_anticoag_related) %>%
+    gather(var_name, result, -med) %>%
+    left_join(count_pts, by = "med") %>%
+    mutate(pct = result / n * 100) %>%
+    select(-n) %>%
+    unite(result_pct, result, pct) %>%
+    spread(med, result_pct) %>%
+    separate(apixaban, c("apix_result", "apix_pct"), sep = "_") %>%
+    separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
+    mutate_at(c("apix_result", "apix_pct", "warf_result", "warf_pct"), as.numeric) %>%
+    rename(Variable = var_name,
+           n = apix_result,
+           `%` = apix_pct,
+           n = warf_result,
+           `%` = warf_pct) %>%
+    knitr::kable(digits = 0, caption = "Preliminary Results") %>%
+    kable_styling() %>%
+    add_header_above(header = hdr) %>%
+    add_header_above(c("", "Apixaban" = 2, "Warfarin" = 2)) 
+```
+
