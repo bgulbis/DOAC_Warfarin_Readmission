@@ -167,7 +167,7 @@ names(hdr) &lt;- c(&quot; &quot;, x, y)
 data_rk %&gt;%
     mutate(revisit = !is.na(revisit_days)) %&gt;%
     group_by(med) %&gt;%
-    summarize_at(c(&quot;revisit&quot;, &quot;afib&quot;, &quot;dvt&quot;, &quot;pe&quot;, &quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;), sum) %&gt;%
+    summarize_at(c(&quot;revisit&quot;, &quot;afib&quot;, &quot;dvt&quot;, &quot;pe&quot;, &quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;), sum, na.rm = TRUE) %&gt;%
     mutate_at(c(&quot;revisit&quot;, &quot;afib&quot;, &quot;dvt&quot;, &quot;pe&quot;, &quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;), funs(coalesce(., 0L))) %&gt;%
     rename(a_A.fib = afib,
            b_DVT = dvt,
@@ -333,16 +333,16 @@ Revisit
 Revisit was OAC Related
 </td>
 <td style="text-align:right;">
-0
+6
 </td>
 <td style="text-align:right;">
-0
+5
 </td>
 <td style="text-align:right;">
-0
+14
 </td>
 <td style="text-align:right;">
-0
+9
 </td>
 </tr>
 <tr>
@@ -350,16 +350,16 @@ Revisit was OAC Related
 New Bleed
 </td>
 <td style="text-align:right;">
-0
+5
 </td>
 <td style="text-align:right;">
-0
+4
 </td>
 <td style="text-align:right;">
-0
+9
 </td>
 <td style="text-align:right;">
-0
+6
 </td>
 </tr>
 <tr>
@@ -367,16 +367,16 @@ New Bleed
 New Thrombus
 </td>
 <td style="text-align:right;">
-0
+1
 </td>
 <td style="text-align:right;">
-0
+1
 </td>
 <td style="text-align:right;">
-0
+4
 </td>
 <td style="text-align:right;">
-0
+3
 </td>
 </tr>
 </tbody>

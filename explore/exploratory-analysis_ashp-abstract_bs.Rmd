@@ -42,7 +42,7 @@ names(hdr) <- c(" ", x, y)
 data_bs %>%
     mutate(revisit = !is.na(revisit_days)) %>%
     group_by(med) %>%
-    summarize_at(c("revisit", "afib", "dvt", "pe", "revisit_anticoag_related", "new_bleed", "new_thrombus"), sum) %>%
+    summarize_at(c("revisit", "afib", "dvt", "pe", "revisit_anticoag_related", "new_bleed", "new_thrombus"), sum, na.rm = TRUE) %>%
     mutate_at(c("revisit", "afib", "dvt", "pe", "revisit_anticoag_related", "new_bleed", "new_thrombus"), funs(coalesce(., 0L))) %>%
     rename(a_A.fib = afib,
            b_DVT = dvt,
