@@ -5,15 +5,22 @@ dir_raw <- "data/raw"
 
 x <- dirr::get_rds("data/tidy")
 
+tmp_revisit <- select(revisit,
+                  revisit.millennium.id,
+                  revisit.type = visit.type,
+                  revisit.facility = facility)
+
 data_bs <- patients_bs %>%
     left_join(manual_bs, by = "millennium.id") %>%
     filter(!other, new_oac) %>%
-    select(-c(fin, person.id, revisit.pie.id, revisit.fin))
+    select(-c(fin, person.id, revisit.pie.id, revisit.fin)) %>%
+    left_join(tmp_revisit, by = "revisit.millennium.id")
 
 data_rk <- patients_rk %>%
     left_join(manual_rk, by = "millennium.id") %>%
     filter(!other, !exclude, new_oac) %>%
-    select(-c(fin, person.id, revisit.pie.id, revisit.fin, exclude))
+    select(-c(fin, person.id, revisit.pie.id, revisit.fin, exclude)) %>%
+    left_join(tmp_revisit, by = "revisit.millennium.id")
 
 demographics <- read_data(dir_raw, "demographics", FALSE) %>%
     as.demographics
