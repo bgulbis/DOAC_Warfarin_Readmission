@@ -1,0 +1,13 @@
+---
+title: "DOAC vs. Warfarin Readmission"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# ASHP Abstract Results
+
+1. [https://bgulbis.github.io/DOAC_Warfarin_Readmission/explore/exploratory-analysis_ashp-abstract_bs.html](Apixaban)
+1. [https://bgulbis.github.io/DOAC_Warfarin_Readmission/explore/exploratory-analysis_ashp-abstract_rk.html](Rivaroxaban)
