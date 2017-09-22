@@ -11,7 +11,7 @@
 
 <meta name="author" content="Rebecca Kessinger, Brian Gulbis" />
 
-<meta name="date" content="2017-09-20" />
+<meta name="date" content="2017-09-22" />
 
 <title>Preliminary Analysis for ASHP Abstract</title>
 
@@ -136,7 +136,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Preliminary Analysis for ASHP Abstract</h1>
 <h4 class="author"><em>Rebecca Kessinger, Brian Gulbis</em></h4>
-<h4 class="date"><em>September 20, 2017</em></h4>
+<h4 class="date"><em>September 22, 2017</em></h4>
 
 </div>
 
@@ -152,30 +152,158 @@ x &lt;- dirr::get_rds(&quot;../data/final&quot;)</code></pre>
 x &lt;- paste(&quot;n =&quot;, count_pts$n[[1]])
 y &lt;- paste(&quot;n =&quot;, count_pts$n[[2]])
 
-hdr &lt;- c(&quot; &quot; = 1, x = 2, y = 2)
-names(hdr) &lt;- c(&quot; &quot;, x, y)
-
-    # rename(A.fib = afib,
-    #        DVT = dvt,
-    #        PE = pe,
-    #        `New Bleed` = new_bleed,
-    #        `New Thrombus` = new_thrombus,
-    #        Revisit = revisit,
-    #        `OAC Related Revisit` = revisit_anticoag_related) %&gt;%
-
-
-data_rk %&gt;%
-    mutate(revisit = !is.na(revisit_days)) %&gt;%
+hdr_total &lt;- c(&quot; &quot; = 1, x = 2, y = 2)
+names(hdr_total) &lt;- c(&quot; &quot;, x, y)</code></pre>
+<pre class="r"><code>data_demographics_rk %&gt;%
+    left_join(data_rk[c(&quot;millennium.id&quot;, &quot;med&quot;)], by = &quot;millennium.id&quot;) %&gt;%
     group_by(med) %&gt;%
-    summarize_at(c(&quot;revisit&quot;, &quot;afib&quot;, &quot;dvt&quot;, &quot;pe&quot;, &quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;), sum, na.rm = TRUE) %&gt;%
-    mutate_at(c(&quot;revisit&quot;, &quot;afib&quot;, &quot;dvt&quot;, &quot;pe&quot;, &quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;), funs(coalesce(., 0L))) %&gt;%
-    rename(a_A.fib = afib,
-           b_DVT = dvt,
-           c_PE = pe,
-           d_Revisit = revisit,
-           `e_Revisit was OAC Related` = revisit_anticoag_related,
-           `f_New Bleed` = new_bleed,
-           `g_New Thrombus` = new_thrombus) %&gt;%
+    summarize_at(c(&quot;age&quot;, &quot;length.stay&quot;), funs(mean, sd)) %&gt;%
+    gather(var_name, result, -med) %&gt;%
+    separate(var_name, c(&quot;var_name&quot;, &quot;measure&quot;), sep = &quot;_&quot;) %&gt;%
+    spread(measure, result) %&gt;%
+    unite(mean_sd, mean, sd) %&gt;%
+    spread(med, mean_sd) %&gt;%
+    separate(rivaroxaban, c(&quot;doac_mean&quot;, &quot;doac_sd&quot;), sep = &quot;_&quot;) %&gt;%
+    separate(warfarin, c(&quot;warf_mean&quot;, &quot;warf_sd&quot;), sep = &quot;_&quot;) %&gt;%
+    mutate_at(c(&quot;doac_mean&quot;, &quot;doac_sd&quot;, &quot;warf_mean&quot;, &quot;warf_sd&quot;), as.numeric) %&gt;%
+    mutate_at(&quot;var_name&quot;, str_replace_all, pattern = c(&quot;age&quot; = &quot;Age (years)&quot;, &quot;length.stay&quot; = &quot;Length of stay, index hospitalization (days)&quot;)) %&gt;%
+    rename(Variable = var_name,
+           Mean = doac_mean,
+           SD = doac_sd,
+           Mean = warf_mean,
+           SD = warf_sd) %&gt;%
+    knitr::kable(digits = 0, caption = &quot;Baseline characteristics&quot;) %&gt;%
+    kable_styling() %&gt;%
+    add_header_above(header = hdr_total) %&gt;%
+    add_header_above(c(&quot;&quot;, &quot;Rivaroxaban&quot; = 2, &quot;Warfarin&quot; = 2)) </code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<caption>
+Baseline characteristics
+</caption>
+<thead>
+<tr>
+<th style="border-bottom:hidden">
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+Rivaroxaban
+</div>
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+Warfarin
+</div>
+</th>
+</tr>
+<tr>
+<th style="border-bottom:hidden">
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+n = 131
+</div>
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+n = 156
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:left;">
+Variable
+</th>
+<th style="text-align:right;">
+Mean
+</th>
+<th style="text-align:right;">
+SD
+</th>
+<th style="text-align:right;">
+Mean
+</th>
+<th style="text-align:right;">
+SD
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Age (years)
+</td>
+<td style="text-align:right;">
+61
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+56
+</td>
+<td style="text-align:right;">
+17
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Length of stay, index hospitalization (days)
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+12
+</td>
+<td style="text-align:right;">
+13
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>df_gender &lt;- data_demographics_rk %&gt;%
+    left_join(data_rk[c(&quot;millennium.id&quot;, &quot;med&quot;)], by = &quot;millennium.id&quot;) %&gt;%
+    filter(!is.na(gender),
+           gender == &quot;Male&quot;) %&gt;%
+    count(med, gender) %&gt;%
+    rename(var_name = gender, 
+           result = n) %&gt;%
+    left_join(count_pts, by = &quot;med&quot;) %&gt;%
+    mutate(pct = result / n * 100) %&gt;%
+    select(-n) %&gt;%
+    unite(result_pct, result, pct) %&gt;%
+    spread(med, result_pct) %&gt;%
+    separate(rivaroxaban, c(&quot;doac_result&quot;, &quot;doac_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    separate(warfarin, c(&quot;warf_result&quot;, &quot;warf_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    mutate_at(c(&quot;doac_result&quot;, &quot;doac_pct&quot;, &quot;warf_result&quot;, &quot;warf_pct&quot;), as.numeric) 
+
+df_race &lt;- data_demographics_rk %&gt;%
+    left_join(data_rk[c(&quot;millennium.id&quot;, &quot;med&quot;)], by = &quot;millennium.id&quot;) %&gt;%
+    mutate_at(&quot;race&quot;, funs(coalesce(., &quot;Unknown&quot;))) %&gt;%
+    filter(!is.na(race)) %&gt;%
+    count(med, race) %&gt;%
+    rename(var_name = race, 
+           result = n) %&gt;%
+    left_join(count_pts, by = &quot;med&quot;) %&gt;%
+    mutate(pct = result / n * 100) %&gt;%
+    select(-n) %&gt;%
+    unite(result_pct, result, pct) %&gt;%
+    spread(med, result_pct) %&gt;%
+    separate(rivaroxaban, c(&quot;doac_result&quot;, &quot;doac_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    separate(warfarin, c(&quot;warf_result&quot;, &quot;warf_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    mutate_at(c(&quot;doac_result&quot;, &quot;doac_pct&quot;, &quot;warf_result&quot;, &quot;warf_pct&quot;), as.numeric) %&gt;%
+    arrange(desc(doac_pct))
+
+df_indication &lt;- data_rk %&gt;%
+    group_by(med) %&gt;%
+    summarize_at(c(&quot;afib&quot;, &quot;dvt&quot;, &quot;pe&quot;), sum, na.rm = TRUE) %&gt;%
+    mutate_at(c(&quot;afib&quot;, &quot;dvt&quot;, &quot;pe&quot;), funs(coalesce(., 0L))) %&gt;%
+    rename(A.fib = afib,
+           DVT = dvt,
+           PE = pe) %&gt;%
     gather(var_name, result, -med) %&gt;%
     left_join(count_pts, by = &quot;med&quot;) %&gt;%
     mutate(pct = result / n * 100) %&gt;%
@@ -185,22 +313,25 @@ data_rk %&gt;%
     separate(rivaroxaban, c(&quot;doac_result&quot;, &quot;doac_pct&quot;), sep = &quot;_&quot;) %&gt;%
     separate(warfarin, c(&quot;warf_result&quot;, &quot;warf_pct&quot;), sep = &quot;_&quot;) %&gt;%
     mutate_at(c(&quot;doac_result&quot;, &quot;doac_pct&quot;, &quot;warf_result&quot;, &quot;warf_pct&quot;), as.numeric) %&gt;%
-    mutate_at(&quot;var_name&quot;, str_replace_all, pattern = &quot;^._&quot;, replacement = &quot;&quot;) %&gt;%
+    arrange(desc(doac_pct))
+
+ df_gender %&gt;%
+    bind_rows(df_race, df_indication) %&gt;%
     rename(Variable = var_name,
            n = doac_result,
            `%` = doac_pct,
            n = warf_result,
            `%` = warf_pct) %&gt;%
-    knitr::kable(digits = 0, caption = &quot;Preliminary Results&quot;) %&gt;%
+    knitr::kable(digits = 0, caption = &quot;Baseline demographics&quot;) %&gt;%
     kable_styling() %&gt;%
-    add_header_above(header = hdr) %&gt;%
+    add_header_above(header = hdr_total) %&gt;%
     add_header_above(c(&quot;&quot;, &quot;Rivaroxaban&quot; = 2, &quot;Warfarin&quot; = 2)) %&gt;%
-    group_rows(&quot;Indications[note]&quot;, 1, 3, label_row_css = &quot;&quot;) %&gt;%
-    group_rows(&quot;Revisits&quot;, 4, 7, label_row_css = &quot;&quot;) %&gt;%
+    group_rows(&quot;Race&quot;, 2, nrow(df_race) + 1, label_row_css = &quot;&quot;) %&gt;%
+    group_rows(&quot;Indication for Anticoagulation[note]&quot;, nrow(df_race) + 2, nrow(df_race) + nrow(df_indication) + 1, label_row_css = &quot;&quot;) %&gt;%
     add_footnote(&quot;Patients may have more than one indication&quot;, &quot;symbol&quot;)</code></pre>
 <table class="table" style="margin-left: auto; margin-right: auto;">
 <caption>
-Preliminary Results
+Baseline demographics
 </caption>
 <thead>
 <tr>
@@ -250,13 +381,120 @@ n
 </tr>
 </thead>
 <tbody>
-<tr grouplength="3">
+<tr>
+<td style="text-align:left;">
+Male
+</td>
+<td style="text-align:right;">
+78
+</td>
+<td style="text-align:right;">
+60
+</td>
+<td style="text-align:right;">
+100
+</td>
+<td style="text-align:right;">
+64
+</td>
+</tr>
+<tr grouplength="5">
 <td colspan="5" style>
-<strong>Indications<sup>*</sup></strong>
+<strong>Race</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:left; padding-left: 2em;" indentlevel="1">
+White/Caucasian
+</td>
+<td style="text-align:right;">
+67
+</td>
+<td style="text-align:right;">
+51
+</td>
+<td style="text-align:right;">
+67
+</td>
+<td style="text-align:right;">
+43
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+African American
+</td>
+<td style="text-align:right;">
+31
+</td>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+42
+</td>
+<td style="text-align:right;">
+27
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Other
+</td>
+<td style="text-align:right;">
+22
+</td>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+38
+</td>
+<td style="text-align:right;">
+24
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Unknown
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+3
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Asian
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+3
+</td>
+</tr>
+<tr grouplength="3">
+<td colspan="5" style>
+<strong>Indication for Anticoagulation<sup>*</sup></strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
 A.fib
 </td>
 <td style="text-align:right;">
@@ -273,24 +511,7 @@ A.fib
 </td>
 </tr>
 <tr>
-<td style="text-align:left; padding-left: 2em;" indentlevel="1">
-DVT
-</td>
-<td style="text-align:right;">
-9
-</td>
-<td style="text-align:right;">
-7
-</td>
-<td style="text-align:right;">
-32
-</td>
-<td style="text-align:right;">
-21
-</td>
-</tr>
-<tr>
-<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
 PE
 </td>
 <td style="text-align:right;">
@@ -306,14 +527,142 @@ PE
 59
 </td>
 </tr>
-<tr grouplength="4">
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+DVT
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+32
+</td>
+<td style="text-align:right;">
+21
+</td>
+</tr>
+</tbody>
+<tfoot>
+<tr>
+<td style="padding: 0; border:0;" colspan="100%">
+<sup>*</sup> Patients may have more than one indication
+</td>
+</tr>
+</tfoot>
+</table>
+<pre class="r"><code>data_rk %&gt;%
+    mutate(revisit = !is.na(revisit_days),
+           revisit_30 = revisit_days &lt;= 30,
+           readmit = revisit.type == &quot;Inpatient&quot;,
+           readmit_30 = readmit &amp; revisit_30) %&gt;%
+    group_by(med) %&gt;%
+    summarize_at(c(&quot;revisit&quot;, &quot;revisit_30&quot;, &quot;readmit&quot;, &quot;readmit_30&quot;), sum, na.rm = TRUE) %&gt;%
+    mutate_at(c(&quot;revisit&quot;, &quot;revisit_30&quot;, &quot;readmit&quot;, &quot;readmit_30&quot;), funs(coalesce(., 0L))) %&gt;%
+    rename(`a_Revisit within 30 days` = revisit_30,
+           `b_Revisit within 90 days` = revisit,
+           `c_Readmission within 30 days` = readmit_30,
+           `d_Readmission within 90 days` = readmit) %&gt;%
+    gather(var_name, result, -med) %&gt;%
+    left_join(count_pts, by = &quot;med&quot;) %&gt;%
+    mutate(pct = result / n * 100) %&gt;%
+    select(-n) %&gt;%
+    unite(result_pct, result, pct) %&gt;%
+    spread(med, result_pct) %&gt;%
+    separate(rivaroxaban, c(&quot;doac_result&quot;, &quot;doac_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    separate(warfarin, c(&quot;warf_result&quot;, &quot;warf_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    mutate_at(c(&quot;doac_result&quot;, &quot;doac_pct&quot;, &quot;warf_result&quot;, &quot;warf_pct&quot;), as.numeric) %&gt;%
+    mutate_at(&quot;var_name&quot;, str_replace_all, pattern = &quot;^._&quot;, replacement = &quot;&quot;) %&gt;%
+    rename(Variable = var_name,
+           n = doac_result,
+           `%` = doac_pct,
+           n = warf_result,
+           `%` = warf_pct) %&gt;%
+    knitr::kable(digits = 0, caption = &quot;Preliminary results&quot;) %&gt;%
+    kable_styling() %&gt;%
+    add_header_above(header = hdr_total) %&gt;%
+    add_header_above(c(&quot;&quot;, &quot;Rivaroxaban&quot; = 2, &quot;Warfarin&quot; = 2)) %&gt;%
+    group_rows(&quot;Primary endpoint&quot;, 1, 2, label_row_css = &quot;&quot;) %&gt;%
+    group_rows(&quot;Secondary endpoint&quot;, 3, 4, label_row_css = &quot;&quot;)</code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<caption>
+Preliminary results
+</caption>
+<thead>
+<tr>
+<th style="border-bottom:hidden">
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+Rivaroxaban
+</div>
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+Warfarin
+</div>
+</th>
+</tr>
+<tr>
+<th style="border-bottom:hidden">
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+n = 131
+</div>
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+n = 156
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:left;">
+Variable
+</th>
+<th style="text-align:right;">
+n
+</th>
+<th style="text-align:right;">
+%
+</th>
+<th style="text-align:right;">
+n
+</th>
+<th style="text-align:right;">
+%
+</th>
+</tr>
+</thead>
+<tbody>
+<tr grouplength="2">
 <td colspan="5" style>
-<strong>Revisits</strong>
+<strong>Primary endpoint</strong>
 </td>
 </tr>
 <tr>
-<td style="text-align:left; padding-left: 2em;" indentLevel="1">
-Revisit
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Revisit within 30 days
+</td>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+46
+</td>
+<td style="text-align:right;">
+29
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Revisit within 90 days
 </td>
 <td style="text-align:right;">
 34
@@ -328,26 +677,467 @@ Revisit
 44
 </td>
 </tr>
+<tr grouplength="2">
+<td colspan="5" style>
+<strong>Secondary endpoint</strong>
+</td>
+</tr>
 <tr>
 <td style="text-align:left; padding-left: 2em;" indentLevel="1">
-Revisit was OAC Related
+Readmission within 30 days
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:right;">
+13
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Readmission within 90 days
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+19
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>count_revisit_pts &lt;- data_rk %&gt;%
+    filter(!is.na(revisit_days)) %&gt;%
+    count(med)
+
+x &lt;- paste(&quot;n =&quot;, count_revisit_pts$n[[1]])
+y &lt;- paste(&quot;n =&quot;, count_revisit_pts$n[[2]])
+
+hdr_revisit &lt;- c(&quot; &quot; = 1, x = 2, y = 2)
+names(hdr_revisit) &lt;- c(&quot; &quot;, x, y)
+
+df_revisit_type &lt;- data_rk %&gt;%
+    filter(!is.na(revisit_days)) %&gt;%
+    count(med, revisit.type) %&gt;%
+    rename(var_name = revisit.type, 
+           result = n) %&gt;%
+    left_join(count_revisit_pts, by = &quot;med&quot;) %&gt;%
+    mutate(pct = result / n * 100) %&gt;%
+    select(-n) %&gt;%
+    unite(result_pct, result, pct) %&gt;%
+    spread(med, result_pct) %&gt;%
+    separate(rivaroxaban, c(&quot;doac_result&quot;, &quot;doac_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    separate(warfarin, c(&quot;warf_result&quot;, &quot;warf_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    mutate_at(c(&quot;doac_result&quot;, &quot;doac_pct&quot;, &quot;warf_result&quot;, &quot;warf_pct&quot;), as.numeric) %&gt;%
+    mutate_if(is.numeric, funs(coalesce(., 0))) %&gt;%
+    arrange(desc(doac_pct), var_name)
+
+df_revisit_details &lt;- data_rk %&gt;%
+    filter(!is.na(revisit_days)) %&gt;%
+    mutate(same_facility = revisit.facility == &quot;Memorial Hermann Hospital&quot;) %&gt;%
+    group_by(med) %&gt;%
+    summarize_at(c(&quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;, &quot;same_facility&quot;), sum, na.rm = TRUE) %&gt;%
+    mutate_at(c(&quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;, &quot;same_facility&quot;), funs(coalesce(., 0L))) %&gt;%
+    rename(`a_Revisit was anticoagulation-related` = revisit_anticoag_related,
+           `b_New bleeding on revisit` = new_bleed,
+           `c_New thrombosis on revisit` = new_thrombus,
+           `d_Revisit to index hospital` = same_facility) %&gt;%
+    gather(var_name, result, -med) %&gt;%
+    left_join(count_revisit_pts, by = &quot;med&quot;) %&gt;%
+    mutate(pct = result / n * 100) %&gt;%
+    select(-n) %&gt;%
+    unite(result_pct, result, pct) %&gt;%
+    spread(med, result_pct) %&gt;%
+    separate(rivaroxaban, c(&quot;doac_result&quot;, &quot;doac_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    separate(warfarin, c(&quot;warf_result&quot;, &quot;warf_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    mutate_at(c(&quot;doac_result&quot;, &quot;doac_pct&quot;, &quot;warf_result&quot;, &quot;warf_pct&quot;), as.numeric) %&gt;%
+    mutate_at(&quot;var_name&quot;, str_replace_all, pattern = &quot;^._&quot;, replacement = &quot;&quot;)
+
+df_revisit_details %&gt;%
+    bind_rows(df_revisit_type) %&gt;%
+    rename(Variable = var_name,
+           n = doac_result,
+           `%` = doac_pct,
+           n = warf_result,
+           `%` = warf_pct) %&gt;%
+    knitr::kable(digits = 0, caption = &quot;Findings among patients with a revisit within 90 days&quot;) %&gt;%
+    kable_styling() %&gt;%
+    add_header_above(header = hdr_revisit) %&gt;%
+    add_header_above(c(&quot;&quot;, &quot;Rivaroxaban&quot; = 2, &quot;Warfarin&quot; = 2)) %&gt;%
+    group_rows(&quot;Revisit Encounter Type&quot;, nrow(df_revisit_details) + 1, nrow(df_revisit_details) + nrow(df_revisit_type), label_row_css = &quot;&quot;) </code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<caption>
+Findings among patients with a revisit within 90 days
+</caption>
+<thead>
+<tr>
+<th style="border-bottom:hidden">
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+Rivaroxaban
+</div>
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+Warfarin
+</div>
+</th>
+</tr>
+<tr>
+<th style="border-bottom:hidden">
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+n = 34
+</div>
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+n = 69
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:left;">
+Variable
+</th>
+<th style="text-align:right;">
+n
+</th>
+<th style="text-align:right;">
+%
+</th>
+<th style="text-align:right;">
+n
+</th>
+<th style="text-align:right;">
+%
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Revisit was anticoagulation-related
 </td>
 <td style="text-align:right;">
 6
 </td>
 <td style="text-align:right;">
-5
+18
 </td>
 <td style="text-align:right;">
 14
 </td>
 <td style="text-align:right;">
+20
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+New bleeding on revisit
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
 9
+</td>
+<td style="text-align:right;">
+13
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+New thrombosis on revisit
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+6
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Revisit to index hospital
+</td>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+71
+</td>
+<td style="text-align:right;">
+50
+</td>
+<td style="text-align:right;">
+72
+</td>
+</tr>
+<tr grouplength="5">
+<td colspan="5" style>
+<strong>Revisit Encounter Type</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:left; padding-left: 2em;" indentLevel="1">
-New Bleed
+Emergency
+</td>
+<td style="text-align:right;">
+17
+</td>
+<td style="text-align:right;">
+50
+</td>
+<td style="text-align:right;">
+28
+</td>
+<td style="text-align:right;">
+41
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Inpatient
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+42
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Bedded Outpatient
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+15
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Observation
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+14
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Inpatient Rehab
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>count_revisit_pts &lt;- data_rk %&gt;%
+    filter(revisit_days &lt;= 30) %&gt;%
+    count(med)
+
+x &lt;- paste(&quot;n =&quot;, count_revisit_pts$n[[1]])
+y &lt;- paste(&quot;n =&quot;, count_revisit_pts$n[[2]])
+
+hdr_revisit &lt;- c(&quot; &quot; = 1, x = 2, y = 2)
+names(hdr_revisit) &lt;- c(&quot; &quot;, x, y)
+
+df_revisit_type &lt;- data_rk %&gt;%
+    filter(revisit_days &lt;= 30) %&gt;%
+    count(med, revisit.type) %&gt;%
+    rename(var_name = revisit.type, 
+           result = n) %&gt;%
+    left_join(count_revisit_pts, by = &quot;med&quot;) %&gt;%
+    mutate(pct = result / n * 100) %&gt;%
+    select(-n) %&gt;%
+    unite(result_pct, result, pct) %&gt;%
+    spread(med, result_pct) %&gt;%
+    separate(rivaroxaban, c(&quot;doac_result&quot;, &quot;doac_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    separate(warfarin, c(&quot;warf_result&quot;, &quot;warf_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    mutate_at(c(&quot;doac_result&quot;, &quot;doac_pct&quot;, &quot;warf_result&quot;, &quot;warf_pct&quot;), as.numeric) %&gt;%
+    mutate_if(is.numeric, funs(coalesce(., 0))) %&gt;%
+    arrange(desc(doac_pct), var_name)
+
+df_revisit_details &lt;- data_rk %&gt;%
+    filter(!is.na(revisit_days)) %&gt;%
+    group_by(med) %&gt;%
+    summarize_at(c(&quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;), sum, na.rm = TRUE) %&gt;%
+    mutate_at(c(&quot;revisit_anticoag_related&quot;, &quot;new_bleed&quot;, &quot;new_thrombus&quot;), funs(coalesce(., 0L))) %&gt;%
+    rename(`a_Revisit was anticoagulation-related` = revisit_anticoag_related,
+           `b_New bleeding on revisit` = new_bleed,
+           `c_New thrombosis on revisit` = new_thrombus) %&gt;%
+    gather(var_name, result, -med) %&gt;%
+    left_join(count_revisit_pts, by = &quot;med&quot;) %&gt;%
+    mutate(pct = result / n * 100) %&gt;%
+    select(-n) %&gt;%
+    unite(result_pct, result, pct) %&gt;%
+    spread(med, result_pct) %&gt;%
+    separate(rivaroxaban, c(&quot;doac_result&quot;, &quot;doac_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    separate(warfarin, c(&quot;warf_result&quot;, &quot;warf_pct&quot;), sep = &quot;_&quot;) %&gt;%
+    mutate_at(c(&quot;doac_result&quot;, &quot;doac_pct&quot;, &quot;warf_result&quot;, &quot;warf_pct&quot;), as.numeric) %&gt;%
+    mutate_at(&quot;var_name&quot;, str_replace_all, pattern = &quot;^._&quot;, replacement = &quot;&quot;)
+
+df_revisit_details %&gt;%
+    bind_rows(df_revisit_type) %&gt;%
+    rename(Variable = var_name,
+           n = doac_result,
+           `%` = doac_pct,
+           n = warf_result,
+           `%` = warf_pct) %&gt;%
+    knitr::kable(digits = 0, caption = &quot;Findings among patients with a revisit within 30 days&quot;) %&gt;%
+    kable_styling() %&gt;%
+    add_header_above(header = hdr_revisit) %&gt;%
+    add_header_above(c(&quot;&quot;, &quot;Rivaroxaban&quot; = 2, &quot;Warfarin&quot; = 2)) %&gt;%
+    group_rows(&quot;Revisit Encounter Type&quot;, nrow(df_revisit_details) + 1, nrow(df_revisit_details) + nrow(df_revisit_type), label_row_css = &quot;&quot;) </code></pre>
+<table class="table" style="margin-left: auto; margin-right: auto;">
+<caption>
+Findings among patients with a revisit within 30 days
+</caption>
+<thead>
+<tr>
+<th style="border-bottom:hidden">
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+Rivaroxaban
+</div>
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+Warfarin
+</div>
+</th>
+</tr>
+<tr>
+<th style="border-bottom:hidden">
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+n = 19
+</div>
+</th>
+<th style="text-align:center; border-bottom:hidden; padding-bottom:0; padding-left:3px;padding-right:3px;" colspan="2">
+<div style="border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+n = 46
+</div>
+</th>
+</tr>
+<tr>
+<th style="text-align:left;">
+Variable
+</th>
+<th style="text-align:right;">
+n
+</th>
+<th style="text-align:right;">
+%
+</th>
+<th style="text-align:right;">
+n
+</th>
+<th style="text-align:right;">
+%
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Revisit was anticoagulation-related
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+32
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+30
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+New bleeding on revisit
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+20
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+New thrombosis on revisit
+</td>
+<td style="text-align:right;">
+1
 </td>
 <td style="text-align:right;">
 5
@@ -358,35 +1148,98 @@ New Bleed
 <td style="text-align:right;">
 9
 </td>
-<td style="text-align:right;">
-6
+</tr>
+<tr grouplength="5">
+<td colspan="5" style>
+<strong>Revisit Encounter Type</strong>
 </td>
 </tr>
 <tr>
 <td style="text-align:left; padding-left: 2em;" indentLevel="1">
-New Thrombus
+Emergency
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+58
+</td>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:right;">
+41
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Inpatient
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+21
+</td>
+<td style="text-align:right;">
+46
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Bedded Outpatient
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Observation
 </td>
 <td style="text-align:right;">
 1
 </td>
 <td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+11
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentLevel="1">
+Inpatient Rehab
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
 1
 </td>
 <td style="text-align:right;">
-4
-</td>
-<td style="text-align:right;">
-3
+2
 </td>
 </tr>
 </tbody>
-<tfoot>
-<tr>
-<td style="padding: 0; border:0;" colspan="100%">
-<sup>*</sup> Patients may have more than one indication
-</td>
-</tr>
-</tfoot>
 </table>
 
 
