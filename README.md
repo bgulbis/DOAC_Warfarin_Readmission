@@ -4,5 +4,5 @@ DOAC vs. Warfarin Readmission
 ASHP Abstract Results
 =====================
 
-1.  [https://bgulbis.github.io/DOAC\_Warfarin\_Readmission/explore/exploratory-analysis\_ashp-abstract\_bs.html](Apixaban)
-2.  [https://bgulbis.github.io/DOAC\_Warfarin\_Readmission/explore/exploratory-analysis\_ashp-abstract\_rk.html](Rivaroxaban)
+1.  [Apixaban](https://bgulbis.github.io/DOAC_Warfarin_Readmission/explore/exploratory-analysis_ashp-abstract_bs.html)
+2.  [Rivaroxaban](https://bgulbis.github.io/DOAC_Warfarin_Readmission/explore/exploratory-analysis_ashp-abstract_rk.html)

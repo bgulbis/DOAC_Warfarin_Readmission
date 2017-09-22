@@ -9,5 +9,5 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # ASHP Abstract Results
 
-1. [https://bgulbis.github.io/DOAC_Warfarin_Readmission/explore/exploratory-analysis_ashp-abstract_bs.html](Apixaban)
-1. [https://bgulbis.github.io/DOAC_Warfarin_Readmission/explore/exploratory-analysis_ashp-abstract_rk.html](Rivaroxaban)
+1. [Apixaban](https://bgulbis.github.io/DOAC_Warfarin_Readmission/explore/exploratory-analysis_ashp-abstract_bs.html)
+1. [Rivaroxaban](https://bgulbis.github.io/DOAC_Warfarin_Readmission/explore/exploratory-analysis_ashp-abstract_rk.html)
