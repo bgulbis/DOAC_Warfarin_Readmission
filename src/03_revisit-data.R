@@ -38,6 +38,13 @@ revisit_ids <- read_data("data/raw", "revisit-ids") %>%
            revisit.fin = fin,
            revisit.admit.datetime = admit.datetime)
 
+write_rds(revisit_ids, "data/tidy/revisit.Rds")
+
+revisit_mbo <- concat_encounters(revisit_ids$revisit.millennium.id)
+
+# run query
+#   *
+
 # y <- include_pts %>%
 #     ungroup() %>%
 #     count(med)
