@@ -16,6 +16,7 @@ options(knitr.table.format = "html")
 library(tidyverse)
 library(stringr)
 library(kableExtra)
+library(broom)
 
 x <- dirr::get_rds("../data/final")
 ```
@@ -26,12 +27,22 @@ count_pts <- data_rk %>%
 
 x <- paste("n =", count_pts$n[[1]])
 y <- paste("n =", count_pts$n[[2]])
+z <- "95% CI"
 
-hdr_total <- c(" " = 1, x = 2, y = 2)
-names(hdr_total) <- c(" ", x, y)
+hdr_total <- c(" " = 1, x = 2, y = 2, " " = 1, z = 2)
+names(hdr_total) <- c(" ", x, y, " ", z)
 ```
 
 ```{r}
+p_demog <- data_demographics_rk %>%
+    left_join(data_rk[c("millennium.id", "med")], by = "millennium.id") %>%
+    select(med, age, length.stay) %>%
+    gather(var_name, value, age, length.stay) %>%
+    group_by(var_name) %>%
+    do(tidy(t.test(value ~ med, data = .))) %>%
+    select(var_name, p.value, conf.low, conf.high) %>%
+    ungroup()
+
 data_demographics_rk %>%
     left_join(data_rk[c("millennium.id", "med")], by = "millennium.id") %>%
     group_by(med) %>%
@@ -43,17 +54,15 @@ data_demographics_rk %>%
     spread(med, mean_sd) %>%
     separate(rivaroxaban, c("doac_mean", "doac_sd"), sep = "_") %>%
     separate(warfarin, c("warf_mean", "warf_sd"), sep = "_") %>%
+    left_join(p_demog, by = "var_name") %>%
     mutate_at(c("doac_mean", "doac_sd", "warf_mean", "warf_sd"), as.numeric) %>%
     mutate_at("var_name", str_replace_all, pattern = c("age" = "Age (years)", "length.stay" = "Length of stay, index hospitalization (days)")) %>%
-    rename(Variable = var_name,
-           Mean = doac_mean,
-           SD = doac_sd,
-           Mean = warf_mean,
-           SD = warf_sd) %>%
-    knitr::kable(digits = 0, caption = "Baseline characteristics") %>%
+    knitr::kable(digits = c(rep(0, 5), rep(3, 3)), 
+                 caption = "Baseline characteristics",
+                 col.names = c("Variable", "Mean", "SD", "Mean", "SD", "p-value", "low", "high")) %>%
     kable_styling() %>%
     add_header_above(header = hdr_total) %>%
-    add_header_above(c("", "Rivaroxaban" = 2, "Warfarin" = 2)) 
+    add_header_above(c(" ", "Rivaroxaban" = 2, "Warfarin" = 2, " ", " ", " "))
 ```
 
 ```{r}
