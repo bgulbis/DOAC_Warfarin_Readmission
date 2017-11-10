@@ -1,6 +1,6 @@
 ---
-title: "Preliminary Analysis for ASHP Abstract"
-author: "Rebecca Kessinger, Brian Gulbis"
+title: "Analysis for ASHP Poster"
+author: "Bolanle Soyombo, Brian Gulbis"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output: 
     html_document:
@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 options(knitr.table.format = "html")
 ```
 
@@ -22,7 +22,7 @@ x <- dirr::get_rds("../data/final")
 ```
 
 ```{r}
-count_pts <- data_rk %>%
+count_pts <- data_bs %>%
     count(med)
 
 x <- paste("n =", count_pts$n[[1]])
@@ -34,8 +34,8 @@ names(hdr_total) <- c(" ", x, y, " ", z)
 ```
 
 ```{r}
-p_demog <- data_demographics_rk %>%
-    left_join(data_rk[c("millennium.id", "med")], by = "millennium.id") %>%
+p_demog <- data_demographics_bs %>%
+    left_join(data_bs[c("millennium.id", "med")], by = "millennium.id") %>%
     select(med, age, length.stay) %>%
     gather(var_name, value, age, length.stay) %>%
     group_by(var_name) %>%
@@ -43,8 +43,8 @@ p_demog <- data_demographics_rk %>%
     select(var_name, p.value, conf.low, conf.high) %>%
     ungroup()
 
-data_demographics_rk %>%
-    left_join(data_rk[c("millennium.id", "med")], by = "millennium.id") %>%
+data_demographics_bs %>%
+    left_join(data_bs[c("millennium.id", "med")], by = "millennium.id") %>%
     group_by(med) %>%
     summarize_at(c("age", "length.stay"), funs(mean, sd)) %>%
     gather(var_name, result, -med) %>%
@@ -52,7 +52,7 @@ data_demographics_rk %>%
     spread(measure, result) %>%
     unite(mean_sd, mean, sd) %>%
     spread(med, mean_sd) %>%
-    separate(rivaroxaban, c("doac_mean", "doac_sd"), sep = "_") %>%
+    separate(apixaban, c("doac_mean", "doac_sd"), sep = "_") %>%
     separate(warfarin, c("warf_mean", "warf_sd"), sep = "_") %>%
     left_join(p_demog, by = "var_name") %>%
     mutate_at(c("doac_mean", "doac_sd", "warf_mean", "warf_sd"), as.numeric) %>%
@@ -62,12 +62,21 @@ data_demographics_rk %>%
                  col.names = c("Variable", "Mean", "SD", "Mean", "SD", "p-value", "low", "high")) %>%
     kable_styling() %>%
     add_header_above(header = hdr_total) %>%
-    add_header_above(c(" ", "Rivaroxaban" = 2, "Warfarin" = 2, " ", " ", " "))
+    add_header_above(c(" ", "Apixaban" = 2, "Warfarin" = 2, " ", " ", " "))
 ```
 
 ```{r}
-df_gender <- data_demographics_rk %>%
-    left_join(data_rk[c("millennium.id", "med")], by = "millennium.id") %>%
+p_gender <- data_demographics_bs %>%
+    left_join(data_bs[c("millennium.id", "med")], by = "millennium.id") %>%
+    # filter(!is.na(gender)) %>%
+    select(med, gender, race) %>%
+    gather(var_name, value, gender, race) %>%
+    group_by(var_name) %>%
+    do(tidy(chisq.test(.$med, .$value))) %>%
+    select(var_name, p.value) 
+
+df_gender <- data_demographics_bs %>%
+    left_join(data_bs[c("millennium.id", "med")], by = "millennium.id") %>%
     filter(!is.na(gender),
            gender == "Male") %>%
     count(med, gender) %>%
@@ -78,12 +87,13 @@ df_gender <- data_demographics_rk %>%
     select(-n) %>%
     unite(result_pct, result, pct) %>%
     spread(med, result_pct) %>%
-    separate(rivaroxaban, c("doac_result", "doac_pct"), sep = "_") %>%
+    separate(apixaban, c("doac_result", "doac_pct"), sep = "_") %>%
     separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
-    mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) 
+    mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) %>%
+    mutate(var = "gender")
 
-df_race <- data_demographics_rk %>%
-    left_join(data_rk[c("millennium.id", "med")], by = "millennium.id") %>%
+df_race <- data_demographics_bs %>%
+    left_join(data_bs[c("millennium.id", "med")], by = "millennium.id") %>%
     mutate_at("race", funs(coalesce(., "Unknown"))) %>%
     filter(!is.na(race)) %>%
     count(med, race) %>%
@@ -94,12 +104,29 @@ df_race <- data_demographics_rk %>%
     select(-n) %>%
     unite(result_pct, result, pct) %>%
     spread(med, result_pct) %>%
-    separate(rivaroxaban, c("doac_result", "doac_pct"), sep = "_") %>%
+    separate(apixaban, c("doac_result", "doac_pct"), sep = "_") %>%
     separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
     mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) %>%
-    arrange(desc(doac_pct))
+    arrange(desc(doac_pct)) %>%
+    mutate(var = "race")
 
-df_indication <- data_rk %>%
+p_indication <- data_bs %>%
+    group_by(millennium.id, med) %>%
+    select(millennium.id, med, afib:other) %>%
+    mutate(vte = dvt | pe,
+           num_ind = sum(afib, vte, other),
+           indication = case_when(num_ind > 1 ~ "multiple",
+                                  afib ~ "afib",
+                                  vte ~ "vte",
+                                  other ~ "other")) %>%
+    ungroup() %>%
+    select(med, indication) %>%
+    mutate(var_name = "indication") %>%
+    group_by(var_name) %>%
+    do(tidy(chisq.test(.$med, .$indication))) %>%
+    select(var_name, p.value)
+
+df_indication <- data_bs %>%
     group_by(med) %>%
     summarize_at(c("afib", "dvt", "pe"), sum, na.rm = TRUE) %>%
     mutate_at(c("afib", "dvt", "pe"), funs(coalesce(., 0L))) %>%
@@ -112,22 +139,28 @@ df_indication <- data_rk %>%
     select(-n) %>%
     unite(result_pct, result, pct) %>%
     spread(med, result_pct) %>%
-    separate(rivaroxaban, c("doac_result", "doac_pct"), sep = "_") %>%
+    separate(apixaban, c("doac_result", "doac_pct"), sep = "_") %>%
     separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
     mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) %>%
-    arrange(desc(doac_pct))
+    arrange(desc(doac_pct)) %>%
+    mutate(var = "indication")
 
- df_gender %>%
+hdr_total <- c(" " = 1, x = 2, y = 2, " " = 1)
+names(hdr_total) <- c(" ", x, y, " ")
+
+p_vals <- bind_rows(p_gender, p_indication)
+
+df_gender %>%
     bind_rows(df_race, df_indication) %>%
-    rename(Variable = var_name,
-           n = doac_result,
-           `%` = doac_pct,
-           n = warf_result,
-           `%` = warf_pct) %>%
-    knitr::kable(digits = 0, caption = "Baseline demographics") %>%
+    left_join(p_vals, by = c("var" = "var_name")) %>%
+    select(-var) %>%
+    knitr::kable(digits = c(rep(0, 5), 3),
+                 caption = "Baseline demographics",
+                 col.names = c("Variable", "n", "%", "n", "%", "p-value")) %>%
     kable_styling() %>%
+    collapse_rows(columns = 6) %>%
     add_header_above(header = hdr_total) %>%
-    add_header_above(c("", "Rivaroxaban" = 2, "Warfarin" = 2)) %>%
+    add_header_above(c("", "Apixaban" = 2, "Warfarin" = 2, "")) %>%
     group_rows("Race", 2, nrow(df_race) + 1, label_row_css = "") %>%
     group_rows("Indication for Anticoagulation[note]", nrow(df_race) + 2, nrow(df_race) + nrow(df_indication) + 1, label_row_css = "") %>%
     add_footnote("Patients may have more than one indication", "symbol")
@@ -135,7 +168,25 @@ df_indication <- data_rk %>%
 ```
 
 ```{r}
-data_rk %>%
+p_primary <- data_bs %>%
+    mutate(revisit = !is.na(revisit_days),
+           revisit_30 = revisit_days <= 30,
+           readmit = revisit.type == "Inpatient",
+           readmit_30 = readmit & revisit_30) %>%
+    mutate_at("revisit_30", funs(coalesce(., FALSE))) %>%
+    group_by(med) %>%
+    select(med, revisit:readmit_30) %>%
+    gather(var_name, value, revisit:readmit_30) %>%
+    group_by(var_name) %>%
+    do(tidy(chisq.test(.$med, .$value))) %>%
+    select(var_name, p.value) %>%
+    ungroup() %>%
+    mutate_at("var_name", str_replace_all, pattern = c("revisit_30" = "Revisit within 30 days",
+                                                       "revisit" = "Revisit within 90 days",
+                                                       "readmit_30" = "Readmission within 30 days",
+                                                       "readmit" = "Readmission within 90 days"))
+
+data_bs %>%
     mutate(revisit = !is.na(revisit_days),
            revisit_30 = revisit_days <= 30,
            readmit = revisit.type == "Inpatient",
@@ -153,35 +204,40 @@ data_rk %>%
     select(-n) %>%
     unite(result_pct, result, pct) %>%
     spread(med, result_pct) %>%
-    separate(rivaroxaban, c("doac_result", "doac_pct"), sep = "_") %>%
+    separate(apixaban, c("doac_result", "doac_pct"), sep = "_") %>%
     separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
     mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) %>%
     mutate_at("var_name", str_replace_all, pattern = "^._", replacement = "") %>%
-    rename(Variable = var_name,
-           n = doac_result,
-           `%` = doac_pct,
-           n = warf_result,
-           `%` = warf_pct) %>%
-    knitr::kable(digits = 0, caption = "Preliminary results") %>%
+    left_join(p_primary, by = "var_name") %>%
+    knitr::kable(digits = c(rep(0, 5), 3), 
+                 caption = "Preliminary results",
+                 col.names = c("Variable", "n", "%", "n", "%", "p-value")) %>%
     kable_styling() %>%
     add_header_above(header = hdr_total) %>%
-    add_header_above(c("", "Rivaroxaban" = 2, "Warfarin" = 2)) %>%
+    add_header_above(c("", "Apixaban" = 2, "Warfarin" = 2, "")) %>%
     group_rows("Primary endpoint", 1, 2, label_row_css = "") %>%
     group_rows("Secondary endpoint", 3, 4, label_row_css = "")
 ```
 
 ```{r}
-count_revisit_pts <- data_rk %>%
+count_revisit_pts <- data_bs %>%
     filter(!is.na(revisit_days)) %>%
     count(med)
 
 x <- paste("n =", count_revisit_pts$n[[1]])
 y <- paste("n =", count_revisit_pts$n[[2]])
 
-hdr_revisit <- c(" " = 1, x = 2, y = 2)
-names(hdr_revisit) <- c(" ", x, y)
+hdr_revisit <- c(" " = 1, x = 2, y = 2, " " = 1)
+names(hdr_revisit) <- c(" ", x, y, " ")
 
-df_revisit_type <- data_rk %>%
+p_revisit_type <- data_bs %>%
+    filter(!is.na(revisit_days)) %>%
+    select(med, revisit.type) %>%
+    do(tidy(chisq.test(.$med, .$revisit.type))) %>%
+    select(p.value) %>%
+    mutate(var_name = "revisit_type")
+
+df_revisit_type <- data_bs %>%
     filter(!is.na(revisit_days)) %>%
     count(med, revisit.type) %>%
     rename(var_name = revisit.type, 
@@ -191,13 +247,31 @@ df_revisit_type <- data_rk %>%
     select(-n) %>%
     unite(result_pct, result, pct) %>%
     spread(med, result_pct) %>%
-    separate(rivaroxaban, c("doac_result", "doac_pct"), sep = "_") %>%
+    separate(apixaban, c("doac_result", "doac_pct"), sep = "_") %>%
     separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
     mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) %>%
     mutate_if(is.numeric, funs(coalesce(., 0))) %>%
-    arrange(desc(doac_pct), var_name)
+    arrange(desc(doac_pct), var_name) %>%
+    mutate(var = "revisit_type") %>%
+    left_join(p_revisit_type, by = c("var" = "var_name")) %>%
+    select(-var)
 
-df_revisit_details <- data_rk %>%
+p_revisit_details <- data_bs %>%
+    filter(!is.na(revisit_days)) %>%
+    mutate(same_facility = revisit.facility == "Memorial Hermann Hospital") %>%
+    group_by(med) %>%
+    select(med, revisit_anticoag_related:new_thrombus, same_facility) %>%
+    gather(var_name, value, revisit_anticoag_related:new_thrombus, same_facility) %>%
+    group_by(var_name) %>%
+    do(tidy(chisq.test(.$med, .$value))) %>%
+    select(var_name, p.value) %>%
+    ungroup() %>%
+    mutate_at("var_name", str_replace_all, pattern = c("revisit_anticoag_related" = "Revisit was anticoagulation-related",
+                                                       "new_bleed" = "New bleeding on revisit",
+                                                       "new_thrombus" = "New thrombosis on revisit",
+                                                       "same_facility" = "Revisit to index hospital"))
+
+df_revisit_details <- data_bs %>%
     filter(!is.na(revisit_days)) %>%
     mutate(same_facility = revisit.facility == "Memorial Hermann Hospital") %>%
     group_by(med) %>%
@@ -213,37 +287,43 @@ df_revisit_details <- data_rk %>%
     select(-n) %>%
     unite(result_pct, result, pct) %>%
     spread(med, result_pct) %>%
-    separate(rivaroxaban, c("doac_result", "doac_pct"), sep = "_") %>%
+    separate(apixaban, c("doac_result", "doac_pct"), sep = "_") %>%
     separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
     mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) %>%
-    mutate_at("var_name", str_replace_all, pattern = "^._", replacement = "")
+    mutate_at("var_name", str_replace_all, pattern = "^._", replacement = "") %>%
+    left_join(p_revisit_details, by = "var_name")
 
 df_revisit_details %>%
     bind_rows(df_revisit_type) %>%
-    rename(Variable = var_name,
-           n = doac_result,
-           `%` = doac_pct,
-           n = warf_result,
-           `%` = warf_pct) %>%
-    knitr::kable(digits = 0, caption = "Findings among patients with a revisit within 90 days") %>%
+    knitr::kable(digits = c(rep(0, 5), 3), 
+                 caption = "Findings among patients with a revisit within 90 days",
+                 col.names = c("Variable", "n", "%", "n", "%", "p-value")) %>%
     kable_styling() %>%
+    collapse_rows(columns = 6) %>%
     add_header_above(header = hdr_revisit) %>%
-    add_header_above(c("", "Rivaroxaban" = 2, "Warfarin" = 2)) %>%
+    add_header_above(c("", "Apixaban" = 2, "Warfarin" = 2, "")) %>%
     group_rows("Revisit Encounter Type", nrow(df_revisit_details) + 1, nrow(df_revisit_details) + nrow(df_revisit_type), label_row_css = "") 
 ```
 
 ```{r}
-count_revisit_pts <- data_rk %>%
+count_revisit_pts <- data_bs %>%
     filter(revisit_days <= 30) %>%
     count(med)
 
 x <- paste("n =", count_revisit_pts$n[[1]])
 y <- paste("n =", count_revisit_pts$n[[2]])
 
-hdr_revisit <- c(" " = 1, x = 2, y = 2)
-names(hdr_revisit) <- c(" ", x, y)
+hdr_revisit <- c(" " = 1, x = 2, y = 2, " " = 1)
+names(hdr_revisit) <- c(" ", x, y, " ")
 
-df_revisit_type <- data_rk %>%
+p_revisit_type <- data_bs %>%
+    filter(revisit_days <= 30) %>%
+    select(med, revisit.type) %>%
+    do(tidy(chisq.test(.$med, .$revisit.type))) %>%
+    select(p.value) %>%
+    mutate(var_name = "revisit_type")
+
+df_revisit_type <- data_bs %>%
     filter(revisit_days <= 30) %>%
     count(med, revisit.type) %>%
     rename(var_name = revisit.type, 
@@ -253,14 +333,32 @@ df_revisit_type <- data_rk %>%
     select(-n) %>%
     unite(result_pct, result, pct) %>%
     spread(med, result_pct) %>%
-    separate(rivaroxaban, c("doac_result", "doac_pct"), sep = "_") %>%
+    separate(apixaban, c("doac_result", "doac_pct"), sep = "_") %>%
     separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
     mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) %>%
     mutate_if(is.numeric, funs(coalesce(., 0))) %>%
-    arrange(desc(doac_pct), var_name)
+    arrange(desc(doac_pct), var_name) %>%
+    mutate(var = "revisit_type") %>%
+    left_join(p_revisit_type, by = c("var" = "var_name")) %>%
+    select(-var)
 
-df_revisit_details <- data_rk %>%
+p_revisit_details <- data_bs %>%
     filter(!is.na(revisit_days)) %>%
+    mutate(same_facility = revisit.facility == "Memorial Hermann Hospital") %>%
+    group_by(med) %>%
+    select(med, revisit_anticoag_related:new_thrombus, same_facility) %>%
+    gather(var_name, value, revisit_anticoag_related:new_thrombus, same_facility) %>%
+    group_by(var_name) %>%
+    do(tidy(chisq.test(.$med, .$value))) %>%
+    select(var_name, p.value) %>%
+    ungroup() %>%
+    mutate_at("var_name", str_replace_all, pattern = c("revisit_anticoag_related" = "Revisit was anticoagulation-related",
+                                                       "new_bleed" = "New bleeding on revisit",
+                                                       "new_thrombus" = "New thrombosis on revisit",
+                                                       "same_facility" = "Revisit to index hospital"))
+
+df_revisit_details <- data_bs %>%
+    filter(revisit_days <= 30) %>%
     group_by(med) %>%
     summarize_at(c("revisit_anticoag_related", "new_bleed", "new_thrombus"), sum, na.rm = TRUE) %>%
     mutate_at(c("revisit_anticoag_related", "new_bleed", "new_thrombus"), funs(coalesce(., 0L))) %>%
@@ -273,21 +371,20 @@ df_revisit_details <- data_rk %>%
     select(-n) %>%
     unite(result_pct, result, pct) %>%
     spread(med, result_pct) %>%
-    separate(rivaroxaban, c("doac_result", "doac_pct"), sep = "_") %>%
+    separate(apixaban, c("doac_result", "doac_pct"), sep = "_") %>%
     separate(warfarin, c("warf_result", "warf_pct"), sep = "_") %>%
     mutate_at(c("doac_result", "doac_pct", "warf_result", "warf_pct"), as.numeric) %>%
-    mutate_at("var_name", str_replace_all, pattern = "^._", replacement = "")
+    mutate_at("var_name", str_replace_all, pattern = "^._", replacement = "") %>%
+    left_join(p_revisit_details, by = "var_name")
 
 df_revisit_details %>%
     bind_rows(df_revisit_type) %>%
-    rename(Variable = var_name,
-           n = doac_result,
-           `%` = doac_pct,
-           n = warf_result,
-           `%` = warf_pct) %>%
-    knitr::kable(digits = 0, caption = "Findings among patients with a revisit within 30 days") %>%
+    knitr::kable(digits = c(rep(0, 5), 3), 
+                 caption = "Findings among patients with a revisit within 30 days",
+                 col.names = c("Variable", "n", "%", "n", "%", "p-value")) %>%
     kable_styling() %>%
+    collapse_rows(columns = 6) %>%
     add_header_above(header = hdr_revisit) %>%
-    add_header_above(c("", "Rivaroxaban" = 2, "Warfarin" = 2)) %>%
+    add_header_above(c("", "Apixaban" = 2, "Warfarin" = 2, "")) %>%
     group_rows("Revisit Encounter Type", nrow(df_revisit_details) + 1, nrow(df_revisit_details) + nrow(df_revisit_type), label_row_css = "") 
 ```
