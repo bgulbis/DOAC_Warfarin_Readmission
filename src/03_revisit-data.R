@@ -1,6 +1,5 @@
 library(tidyverse)
 library(lubridate)
-library(stringr)
 library(edwr)
 library(icd)
 
@@ -13,7 +12,7 @@ patients <- read_data("data/raw", "patients", FALSE) %>%
 
 revisit <- read_data("data/raw", "encounters") %>%
     as.encounters() %>%
-    filter(visit.type %in% c("Inpatient", "Emergency", "Bedded Outpatient", "Observation", "Inpatient Rehab")) %>%
+    filter(visit.type %in% c("Inpatient", "Emergency", "Observation")) %>%
     group_by(person.id) %>%
     arrange(admit.datetime, .by_group = TRUE) %>%
     left_join(patients, by = "millennium.id") %>%
