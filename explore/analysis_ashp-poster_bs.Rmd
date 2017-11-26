@@ -14,7 +14,6 @@ options(knitr.table.format = "html")
 
 ```{r}
 library(tidyverse)
-library(stringr)
 library(kableExtra)
 library(broom)
 
@@ -261,7 +260,7 @@ p_revisit_details <- data_bs %>%
     mutate(same_facility = revisit.facility == "Memorial Hermann Hospital") %>%
     group_by(med) %>%
     select(med, revisit_anticoag_related:new_thrombus, same_facility) %>%
-    gather(var_name, value, revisit_anticoag_related:new_thrombus, same_facility) %>%
+    gather(var_name, value, revisit_anticoag_related, new_bleed, same_facility) %>%
     group_by(var_name) %>%
     do(tidy(chisq.test(.$med, .$value))) %>%
     select(var_name, p.value) %>%
@@ -347,7 +346,7 @@ p_revisit_details <- data_bs %>%
     mutate(same_facility = revisit.facility == "Memorial Hermann Hospital") %>%
     group_by(med) %>%
     select(med, revisit_anticoag_related:new_thrombus, same_facility) %>%
-    gather(var_name, value, revisit_anticoag_related:new_thrombus, same_facility) %>%
+    gather(var_name, value, revisit_anticoag_related, new_bleed, same_facility) %>%
     group_by(var_name) %>%
     do(tidy(chisq.test(.$med, .$value))) %>%
     select(var_name, p.value) %>%
