@@ -14,7 +14,6 @@ options(knitr.table.format = "html")
 
 ```{r}
 library(tidyverse)
-library(stringr)
 library(kableExtra)
 library(broom)
 
